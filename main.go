@@ -6,13 +6,17 @@ import (
 	"time"
 
 	"github.com/charmbracelet/log"
+	"github.com/emersion/go-imap/v2/imapclient"
 	"github.com/joho/godotenv"
 )
 
 var (
-	IMAPUser    string // IMAP_USER
-	IMAPPass    string // IMAP_PASSWORD
-	IMAPAddress string // IMAP_ADDRESS, default 0.0.0.0:1443
+	IMAPUser        string // IMAP_USER
+	IMAPPass        string // IMAP_PASSWORD
+	IMAPAddress     string // IMAP_ADDRESS, default 127.0.0.1:1443
+	IMAPCertificate string // IMAP_CERTIFICATE
+
+	Client *imapclient.Client
 )
 
 func main() {
@@ -21,9 +25,12 @@ func main() {
 	logger := log.NewWithOptions(os.Stderr, log.Options{
 		TimeFormat:      time.DateTime,
 		ReportTimestamp: true,
+		Level:           log.DebugLevel,
 	})
+
 	slogger := slog.New(logger)
 	slog.SetDefault(slogger)
+	log.SetDefault(logger)
 
 	// Load .env (for convenience)
 	err := godotenv.Load()
@@ -35,14 +42,41 @@ func main() {
 	IMAPUser = os.Getenv("IMAP_USER")
 	IMAPPass = os.Getenv("IMAP_PASSWORD")
 	IMAPAddress = os.Getenv("IMAP_ADDRESS")
+	IMAPCertificate := os.Getenv("IMAP_CERTIFICATE")
+	// Required
 	if IMAPUser == "" {
 		log.Fatal("`IMAP_USER` not set, required variable")
 	}
 	if IMAPPass == "" {
 		log.Fatal("`IMAP_PASSWORD` not set, required variable")
 	}
+	// Optional
 	if IMAPAddress == "" {
-		log.Warn("No `IMAP_ADDRESS` set, using default 0.0.0.0:1143")
-		IMAPAddress = "0.0.0.0:1143"
+		log.Warn("No `IMAP_ADDRESS` set, using default 127.0.0.1:1143")
+		IMAPAddress = "127.0.0.1:1143"
+	}
+	if IMAPCertificate == "" {
+		log.Warn("No `IMAP_CERTIFICATE` set, using insecure TLS")
+	}
+
+	// Init Connection
+	Client = connectIMAP(IMAPAddress, IMAPUser, IMAPPass, IMAPCertificate)
+	// Cleanup
+	defer Client.Close()
+	defer Client.Logout()
+
+	// remove from memory
+	IMAPPass = ""
+
+	// Run main loop
+	loop()
+}
+
+func loop() {
+	rights, _ := Client.MyRights("INBOX").Wait()
+	log.Infof("%d Rights", len(rights.Rights))
+
+	for i, r := range rights.Rights {
+		log.Infof("%d: %v", i, r)
 	}
 }
