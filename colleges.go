@@ -17,10 +17,10 @@ var colleges []byte
 var records []CollegeRecord
 
 type CollegeRecord struct {
-	name    string
-	address string
-	city    string
-	state   string
+	name   string
+	domain string
+	city   string
+	state  string
 }
 
 func parseCSV() {
@@ -37,22 +37,22 @@ func parseCSV() {
 		}
 
 		parsed := CollegeRecord{
-			name:    record[0],
-			address: record[1],
-			city:    record[2],
-			state:   record[3],
+			name:   record[0],
+			domain: record[1],
+			city:   record[2],
+			state:  record[3],
 		}
 
 		records = append(records, parsed)
 	}
 }
 
-// Given an address (osu.edu), check for it's data in the records
-func fetchRecord(address string) *CollegeRecord {
+// Given an domain (osu.edu), check for it's data in the records
+func fetchRecord(domain string) *CollegeRecord {
 
 	// use basic for loop instead of range to avoid copying each record
-	for i := 0; i < len(records); i++ {
-		if records[i].address == address {
+	for i := range records {
+		if records[i].domain == domain {
 			return &records[i]
 		}
 	}
