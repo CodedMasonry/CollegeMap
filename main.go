@@ -61,9 +61,7 @@ func main() {
 
 	// Init Connection
 	Client = connectIMAP(IMAPAddress, IMAPUser, IMAPPass, IMAPCertificate)
-	// Cleanup
 	defer Client.Close()
-	defer Client.Logout()
 
 	// remove from memory
 	IMAPPass = ""
@@ -73,10 +71,11 @@ func main() {
 }
 
 func loop() {
-	rights, _ := Client.MyRights("INBOX").Wait()
-	log.Infof("%d Rights", len(rights.Rights))
-
-	for i, r := range rights.Rights {
-		log.Infof("%d: %v", i, r)
+	messages := fetchMessages(Client)
+	
+	// Parse those messages
+	for _, msg := range messages {
+		log.Printf("Subject: %v", msg.Envelope.Subject)
+		log.Printf("- Sender: %v", msg.Envelope.From)
 	}
 }
