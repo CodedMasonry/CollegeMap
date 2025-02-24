@@ -3,6 +3,7 @@ package main
 import (
 	"log/slog"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/log"
@@ -15,23 +16,42 @@ var (
 	IMAPPass        string // IMAP_PASSWORD
 	IMAPAddress     string // IMAP_ADDRESS, default 127.0.0.1:1443
 	IMAPCertificate string // IMAP_CERTIFICATE
-
-	Client *imapclient.Client
 )
 
 func main() {
-	// Changes the logger to charmbracelet/log
-	// Call slog so logging can be agnostic
+	// Init Logging
+	initLogging()
+
+	// Init Variables
+	parseENV()
+	parseCSV()
+
+	// Init Connection
+	client := connectIMAP(IMAPAddress, IMAPUser, IMAPPass, IMAPCertificate)
+	defer client.Close()
+
+	// Run main loop
+	loop(client)
+
+	// Cleanup
+	client.Logout().Wait()
+}
+
+// Changes the logger to charmbracelet/log
+func initLogging() {
 	logger := log.NewWithOptions(os.Stderr, log.Options{
 		TimeFormat:      time.DateTime,
 		ReportTimestamp: true,
 		Level:           log.DebugLevel,
 	})
 
+	// Call slog so logging can be agnostic
 	slogger := slog.New(logger)
 	slog.SetDefault(slogger)
 	log.SetDefault(logger)
+}
 
+func parseENV() {
 	// Load .env (for convenience)
 	err := godotenv.Load()
 	if err != nil {
@@ -58,24 +78,24 @@ func main() {
 	if IMAPCertificate == "" {
 		log.Warn("No `IMAP_CERTIFICATE` set, using insecure TLS")
 	}
-
-	// Init Connection
-	Client = connectIMAP(IMAPAddress, IMAPUser, IMAPPass, IMAPCertificate)
-	defer Client.Close()
-
-	// remove from memory
-	IMAPPass = ""
-
-	// Run main loop
-	loop()
 }
 
-func loop() {
-	messages := fetchMessages(Client)
-	
-	// Parse those messages
+func loop(c *imapclient.Client) {
+	messages := fetchMessages(c)
+
 	for _, msg := range messages {
-		log.Printf("Subject: %v", msg.Envelope.Subject)
-		log.Printf("- Sender: %v", msg.Envelope.From)
+		// admissions@osu.edu -> osu.edu
+		address := strings.Split(msg.Envelope.From[0].Addr(), "@")
+
+		// osu.edu -> CollegeRecord
+		record := fetchRecord(address[len(address)-1])
+		log.Debugf("- %v", record.name)
+
+		// Mark as Seen (signal as already processed)
+		/*
+			if err := markSeen(c, msg); err != nil {
+				log.Fatalf("Failed to mark message as seen: %v", err)
+			}
+		*/
 	}
 }

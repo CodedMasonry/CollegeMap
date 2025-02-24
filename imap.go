@@ -41,7 +41,7 @@ func connectIMAP(addr, user, pass, cert string) (client *imapclient.Client) {
 	return
 }
 
-func fetchMessages(c *imapclient.Client) (messages []*imapclient.FetchMessageBuffer)  {
+func fetchMessages(c *imapclient.Client) (messages []*imapclient.FetchMessageBuffer) {
 	// Select Mailbox
 	selectedMbox, err := c.Select("All Mail", nil).Wait()
 	if err != nil {
@@ -49,8 +49,11 @@ func fetchMessages(c *imapclient.Client) (messages []*imapclient.FetchMessageBuf
 	}
 	log.Infof("%d messages", selectedMbox.NumMessages)
 
-	// Search for messages from colleges, and haven't been "seen" (processed) yet
+	// Search for messages from colleges
+	// Check if they haven't been "seen" (processed) yet
 	search := &imap.SearchCriteria{Body: []string{".edu"}, Not: []imap.SearchCriteria{{Flag: []imap.Flag{"\\Seen"}}}}
+
+	// Run Search
 	ids, err := c.UIDSearch(search, nil).Wait()
 	if err != nil {
 		log.Fatalf("Failed to find messages: %v", err)
@@ -71,4 +74,13 @@ func fetchMessages(c *imapclient.Client) (messages []*imapclient.FetchMessageBuf
 	}
 
 	return
+}
+
+func markSeen(c *imapclient.Client, msg *imapclient.FetchMessageBuffer) error {
+	storeFlags := imap.StoreFlags{
+		Op:    imap.StoreFlagsAdd,
+		Flags: []imap.Flag{imap.FlagSeen},
+	}
+
+	return c.Store(imap.UIDSetNum(msg.UID), &storeFlags, nil).Close()
 }
