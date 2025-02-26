@@ -7,9 +7,11 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+// Actual Database connection
+
 // DSN is the connection string.
 // Example: postgres://postgres:@localhost:5432/test?sslmode=disable
-func initDB(dsn string) {
+func initDB(dsn string) (db *pgx.Conn) {
 	// Create Connection
 	db, err := pgx.Connect(context.Background(), dsn)
 	if err != nil {
@@ -68,10 +70,13 @@ func initDB(dsn string) {
 	}
 
 	log.Info("Database Initialized")
+	return
 }
 
 // Increment if record exists, else create new record
-func incrementCollegeEmails(conn *pgx.Conn, rec CollegeRecord) error {
+func incrementCollegeEmails(conn *pgx.Conn, rec *CollegeRecord) error {
+	checkStateExists(conn, rec.stateAbbr)
+
 	query := `
 		INSERT INTO colleges (name, domain, is_ivory, num_emails, state_abbr)
 		VALUES ($1, $2, $3, 1, $4)
@@ -83,23 +88,14 @@ func incrementCollegeEmails(conn *pgx.Conn, rec CollegeRecord) error {
 }
 
 // Checks whether the state exists, if not create a record
-func checkStateExists(conn *pgx.Conn, abbreviation, name string) error {
+func checkStateExists(conn *pgx.Conn, abbreviation string) error {
+	stateName := states[abbreviation]
+
 	query := `
 		INSERT INTO states (abbreviation, name)
 		VALUES ($1, $2)
 		ON CONFLICT (abbreviation) DO NOTHING;
 	`
-	_, err := conn.Exec(context.Background(), query, abbreviation, name)
+	_, err := conn.Exec(context.Background(), query, abbreviation, stateName)
 	return err
-}
-
-// Whether that schools has a record or not
-func checkDomainExists(conn *pgx.Conn, domain string) (bool, error) {
-	var exists bool
-	query := `SELECT EXISTS (SELECT 1 FROM colleges WHERE domain = $1);`
-	err := conn.QueryRow(context.Background(), query, domain).Scan(&exists)
-	if err != nil {
-		return false, err
-	}
-	return exists, nil
 }
