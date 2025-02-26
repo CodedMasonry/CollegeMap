@@ -16,6 +16,8 @@ var (
 	IMAPPass        string // IMAP_PASSWORD
 	IMAPAddress     string // IMAP_ADDRESS, default 127.0.0.1:1443
 	IMAPCertificate string // IMAP_CERTIFICATE
+
+	DB_URL string // DB_URL
 )
 
 func main() {
@@ -25,6 +27,9 @@ func main() {
 	// Init Variables
 	parseENV()
 	parseCSV()
+
+	// Init Database
+	initDB(DB_URL)
 
 	// Init Connection
 	client := connectIMAP(IMAPAddress, IMAPUser, IMAPPass, IMAPCertificate)
@@ -62,21 +67,29 @@ func parseENV() {
 	IMAPUser = os.Getenv("IMAP_USER")
 	IMAPPass = os.Getenv("IMAP_PASSWORD")
 	IMAPAddress = os.Getenv("IMAP_ADDRESS")
-	IMAPCertificate := os.Getenv("IMAP_CERTIFICATE")
-	// Required
+	IMAPCertificate = os.Getenv("IMAP_CERTIFICATE")
+	DB_URL = os.Getenv("DB_URL")
+
+	// Required IMAP
 	if IMAPUser == "" {
 		log.Fatal("`IMAP_USER` not set, required variable")
 	}
 	if IMAPPass == "" {
 		log.Fatal("`IMAP_PASSWORD` not set, required variable")
 	}
-	// Optional
+
+	// Optional IMAP
 	if IMAPAddress == "" {
 		log.Warn("No `IMAP_ADDRESS` set, using default 127.0.0.1:1143")
 		IMAPAddress = "127.0.0.1:1143"
 	}
 	if IMAPCertificate == "" {
 		log.Warn("No `IMAP_CERTIFICATE` set, using insecure TLS")
+	}
+
+	// Database
+	if DB_URL == "" {
+		log.Fatal("No `DB_URL` set, requires postgres DSN")
 	}
 }
 

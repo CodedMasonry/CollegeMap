@@ -18,24 +18,31 @@ func initDB(dsn string) {
 	defer db.Close(context.Background())
 
 	// Table SQL
-	createTableQuery := `
-	CREATE TABLE IF NOT EXISTS colleges (
-		id SERIAL PRIMARY KEY,
-		name TEXT NOT NULL,
-		domain TEXT NOT NULL,
-		state_abbr CHAR(2) NOT NULL REFERENCES states(abbreviation) ON DELETE CASCADE
-	);
-
+	createStatesTableQuery := `
 	CREATE TABLE IF NOT EXISTS states (
 		abbreviation CHAR(2) PRIMARY KEY,
 		name TEXT UNIQUE NOT NULL
 	);
 	`
 
+	createCollegeTableQuery := `
+	CREATE TABLE IF NOT EXISTS colleges (
+		id SERIAL PRIMARY KEY,
+		name TEXT NOT NULL,
+		domain TEXT NOT NULL,
+		state_abbr CHAR(2) NOT NULL REFERENCES states(abbreviation) ON DELETE CASCADE
+	);
+	`
+
 	// Run Migration
-	_, err = db.Exec(context.Background(), createTableQuery)
+	log.Info("Creating Database Tables If Non-Existent...")
+	_, err = db.Exec(context.Background(), createStatesTableQuery)
 	if err != nil {
-		log.Fatalf("Failed to create table: %v", err)
+		log.Fatalf("Failed to create state table: %v", err)
+	}
+	_, err = db.Exec(context.Background(), createCollegeTableQuery)
+	if err != nil {
+		log.Fatalf("Failed to create college table: %v", err)
 	}
 
 	// Index SQL
@@ -43,8 +50,15 @@ func initDB(dsn string) {
 	CREATE UNIQUE INDEX IF NOT EXISTS idx_colleges_domain ON colleges(domain);
 	`
 	// Create Index
+	log.Info("Creating Indexes If Non-Existent...")
 	_, err = db.Exec(context.Background(), createIndexQuery)
 	if err != nil {
 		log.Fatalf("Failed to create index: %v", err)
 	}
+
+	log.Info("Database Initialized")
+}
+
+func incrementRecord(rec CollegeRecord) {
+
 }

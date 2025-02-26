@@ -12,6 +12,18 @@ import (
 //go:embed Colleges.csv
 var colleges []byte
 
+// Ivory League Colleges
+var IvoryLeague []string = []string{
+	"brown.edu",
+	"columbia.edu",
+	"cornell.edu",
+	"dartmouth.edu",
+	"harvard.edu",
+	"upenn.edu",
+	"princeton.edu",
+	"yale.edu",
+}
+
 // After colleges are parsed, place here.
 // Allows for College list to be updated outside of Go
 var records []CollegeRecord
