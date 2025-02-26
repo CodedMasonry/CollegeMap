@@ -35,6 +35,16 @@ func initDB(dsn string) {
 	// Run Migration
 	_, err = db.Exec(context.Background(), createTableQuery)
 	if err != nil {
-		log.Fatalf("Failed to create table: %v\n", err)
+		log.Fatalf("Failed to create table: %v", err)
+	}
+
+	// Index SQL
+	createIndexQuery := `
+	CREATE UNIQUE INDEX IF NOT EXISTS idx_colleges_domain ON colleges(domain);
+	`
+	// Create Index
+	_, err = db.Exec(context.Background(), createIndexQuery)
+	if err != nil {
+		log.Fatalf("Failed to create index: %v", err)
 	}
 }
