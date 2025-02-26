@@ -4,16 +4,17 @@ import (
 	_ "embed"
 	"encoding/csv"
 	"io"
+	"slices"
 	"strings"
 
 	"github.com/charmbracelet/log"
 )
 
-//go:embed Colleges.csv
+//go:embed colleges.csv
 var colleges []byte
 
 // Ivory League Colleges
-var IvoryLeague []string = []string{
+var IvoryLeague = []string{
 	"brown.edu",
 	"columbia.edu",
 	"cornell.edu",
@@ -24,15 +25,69 @@ var IvoryLeague []string = []string{
 	"yale.edu",
 }
 
+// State Abbr to name
+var states = map[string]string{
+	"AL": "Alabama",
+	"AK": "Alaska",
+	"AZ": "Arizona",
+	"AR": "Arkansas",
+	"CA": "California",
+	"CO": "Colorado",
+	"CT": "Connecticut",
+	"DE": "Delaware",
+	"FL": "Florida",
+	"GA": "Georgia",
+	"HI": "Hawaii",
+	"ID": "Idaho",
+	"IL": "Illinois",
+	"IN": "Indiana",
+	"IA": "Iowa",
+	"KS": "Kansas",
+	"KY": "Kentucky",
+	"LA": "Louisiana",
+	"ME": "Maine",
+	"MD": "Maryland",
+	"MA": "Massachusetts",
+	"MI": "Michigan",
+	"MN": "Minnesota",
+	"MS": "Mississippi",
+	"MO": "Missouri",
+	"MT": "Montana",
+	"NE": "Nebraska",
+	"NV": "Nevada",
+	"NH": "New Hampshire",
+	"NJ": "New Jersey",
+	"NM": "New Mexico",
+	"NY": "New York",
+	"NC": "North Carolina",
+	"ND": "North Dakota",
+	"OH": "Ohio",
+	"OK": "Oklahoma",
+	"OR": "Oregon",
+	"PA": "Pennsylvania",
+	"RI": "Rhode Island",
+	"SC": "South Carolina",
+	"SD": "South Dakota",
+	"TN": "Tennessee",
+	"TX": "Texas",
+	"UT": "Utah",
+	"VT": "Vermont",
+	"VA": "Virginia",
+	"WA": "Washington",
+	"WV": "West Virginia",
+	"WI": "Wisconsin",
+	"WY": "Wyoming",
+}
+
 // After colleges are parsed, place here.
 // Allows for College list to be updated outside of Go
 var records []CollegeRecord
 
 type CollegeRecord struct {
-	name   string
-	domain string
-	city   string
-	state  string
+	name      string
+	domain    string
+	stateAbbr string
+	isIvory   bool
 }
 
 func parseCSV() {
@@ -49,10 +104,14 @@ func parseCSV() {
 		}
 
 		parsed := CollegeRecord{
-			name:   record[0],
-			domain: record[1],
-			city:   record[2],
-			state:  record[3],
+			name:      record[0],
+			domain:    record[1],
+			stateAbbr: record[2],
+			isIvory:   false,
+		}
+
+		if slices.Contains(IvoryLeague, parsed.domain) {
+			parsed.isIvory = true
 		}
 
 		records = append(records, parsed)

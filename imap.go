@@ -43,11 +43,10 @@ func connectIMAP(addr, user, pass, cert string) (client *imapclient.Client) {
 
 func fetchMessages(c *imapclient.Client) (messages []*imapclient.FetchMessageBuffer) {
 	// Select Mailbox
-	selectedMbox, err := c.Select("All Mail", nil).Wait()
+	_, err := c.Select("All Mail", nil).Wait()
 	if err != nil {
 		log.Fatalf("failed to select 'All Mail' : %v", err)
 	}
-	log.Infof("%d messages", selectedMbox.NumMessages)
 
 	// Search for messages from colleges
 	// Check if they haven't been "seen" (processed) yet

@@ -17,19 +17,30 @@ func initDB(dsn string) {
 	}
 	defer db.Close(context.Background())
 
-	// Table SQL
+	// States
+	// - abbreviation: shorthand for state
+	// - name:         Name of the state
 	createStatesTableQuery := `
 	CREATE TABLE IF NOT EXISTS states (
 		abbreviation CHAR(2) PRIMARY KEY,
-		name TEXT UNIQUE NOT NULL
+		name VARCHAR(32) UNIQUE NOT NULL
 	);
 	`
 
+	// Colleges
+	// - id:         random int
+	// - name:       Name of College
+	// - domain:     domain name, ex: osu.edu
+	// - is_ivory:   whether it is an ivory school
+	// - num_emails: the number of emails
+	// - state_abbr: state associated with school
 	createCollegeTableQuery := `
 	CREATE TABLE IF NOT EXISTS colleges (
 		id SERIAL PRIMARY KEY,
-		name TEXT NOT NULL,
-		domain TEXT NOT NULL,
+		name VARCHAR(128) NOT NULL,
+		domain VARCHAR(32) NOT NULL,
+		is_ivory BOOLEAN NOT NULL,
+		num_emails INTEGER NOT NULL,
 		state_abbr CHAR(2) NOT NULL REFERENCES states(abbreviation) ON DELETE CASCADE
 	);
 	`
@@ -59,6 +70,36 @@ func initDB(dsn string) {
 	log.Info("Database Initialized")
 }
 
-func incrementRecord(rec CollegeRecord) {
+// Increment if record exists, else create new record
+func incrementCollegeEmails(conn *pgx.Conn, rec CollegeRecord) error {
+	query := `
+		INSERT INTO colleges (name, domain, is_ivory, num_emails, state_abbr)
+		VALUES ($1, $2, $3, 1, $4)
+		ON CONFLICT (domain)
+		DO UPDATE SET num_emails = colleges.num_emails + 1;
+	`
+	_, err := conn.Exec(context.Background(), query, rec.name, rec.domain, rec.isIvory, rec.stateAbbr)
+	return err
+}
 
+// Checks whether the state exists, if not create a record
+func checkStateExists(conn *pgx.Conn, abbreviation, name string) error {
+	query := `
+		INSERT INTO states (abbreviation, name)
+		VALUES ($1, $2)
+		ON CONFLICT (abbreviation) DO NOTHING;
+	`
+	_, err := conn.Exec(context.Background(), query, abbreviation, name)
+	return err
+}
+
+// Whether that schools has a record or not
+func checkDomainExists(conn *pgx.Conn, domain string) (bool, error) {
+	var exists bool
+	query := `SELECT EXISTS (SELECT 1 FROM colleges WHERE domain = $1);`
+	err := conn.QueryRow(context.Background(), query, domain).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
 }
