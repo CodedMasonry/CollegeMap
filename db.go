@@ -7,8 +7,6 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-// Actual Database connection
-
 // DSN is the connection string.
 // Example: postgres://postgres:@localhost:5432/test?sslmode=disable
 func initDB(dsn string) (db *pgx.Conn) {
@@ -17,7 +15,6 @@ func initDB(dsn string) (db *pgx.Conn) {
 	if err != nil {
 		log.Fatalf("Unable to connect to database: %v", err)
 	}
-	defer db.Close(context.Background())
 
 	// States
 	// - abbreviation: shorthand for state
@@ -70,7 +67,7 @@ func initDB(dsn string) (db *pgx.Conn) {
 	}
 
 	log.Info("Database Initialized")
-	return
+	return db
 }
 
 // Increment if record exists, else create new record
@@ -84,6 +81,7 @@ func incrementCollegeEmails(conn *pgx.Conn, rec *CollegeRecord) error {
 		DO UPDATE SET num_emails = colleges.num_emails + 1;
 	`
 	_, err := conn.Exec(context.Background(), query, rec.name, rec.domain, rec.isIvory, rec.stateAbbr)
+
 	return err
 }
 

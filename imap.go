@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"strings"
 
 	"github.com/charmbracelet/log"
 	"github.com/emersion/go-imap/v2"
@@ -67,9 +68,17 @@ func fetchMessages(c *imapclient.Client) (messages []*imapclient.FetchMessageBuf
 	}
 
 	// Get messages
-	messages, err = c.Fetch(ids.All, &imap.FetchOptions{Envelope: true}).Collect()
+	fetchResult, err := c.Fetch(ids.All, &imap.FetchOptions{Envelope: true}).Collect()
 	if err != nil {
 		log.Fatalf("Failed to fetch messages: %v", err)
+	}
+
+	// Confirm that sender is from .edu domain
+	messages = []*imapclient.FetchMessageBuffer{}
+	for _, r := range fetchResult {
+		if strings.HasSuffix(r.Envelope.From[0].Addr(), ".edu") {
+			messages = append(messages, r)
+		}
 	}
 
 	return

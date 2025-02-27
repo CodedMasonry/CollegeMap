@@ -13,8 +13,9 @@ import (
 )
 
 // Main func loop
-func loop(c *imapclient.Client, db *pgx.Conn) {
+func run(c *imapclient.Client, db *pgx.Conn) {
 	messages := fetchMessages(c)
+	numMessages := len(messages)
 
 	for _, msg := range messages {
 		// admissions@osu.edu -> osu.edu
@@ -25,7 +26,10 @@ func loop(c *imapclient.Client, db *pgx.Conn) {
 		log.Debugf("- %v", record.name)
 
 		// CollegeRecord -> DB Entry
-		incrementCollegeEmails(db, record)
+		err := incrementCollegeEmails(db, record)
+		if err != nil {
+			log.Fatalf("failed to increment record: %v", err)
+		}
 
 		// Mark as Seen (signal as already processed)
 		/*
@@ -34,6 +38,7 @@ func loop(c *imapclient.Client, db *pgx.Conn) {
 			}
 		*/
 	}
+	log.Infof("%d Records Incremented", numMessages)
 }
 
 // Changes the logger to charmbracelet/log

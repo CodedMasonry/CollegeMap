@@ -1,5 +1,9 @@
 package main
 
+import (
+	"context"
+)
+
 var (
 	IMAPUser        string // IMAP_USER
 	IMAPPass        string // IMAP_PASSWORD
@@ -19,13 +23,14 @@ func main() {
 
 	// Init Database
 	db := initDB(DB_URL)
+	defer db.Close(context.Background())
 
 	// Init Connection
 	client := connectIMAP(IMAPAddress, IMAPUser, IMAPPass, IMAPCertificate)
 	defer client.Close()
 
 	// Run main loop
-	loop(client, db)
+	run(client, db)
 
 	// Cleanup
 	client.Logout().Wait()
