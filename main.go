@@ -32,6 +32,9 @@ func main() {
 	// Run main loop
 	run(client, db)
 
+
+
+	
 	// Cleanup
 	client.Logout().Wait()
 }

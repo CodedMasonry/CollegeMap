@@ -32,11 +32,9 @@ func run(c *imapclient.Client, db *pgx.Conn) {
 		}
 
 		// Mark as Seen (signal as already processed)
-		/*
-			if err := markSeen(c, msg); err != nil {
-				log.Fatalf("Failed to mark message as seen: %v", err)
-			}
-		*/
+		if err := markSeen(c, msg); err != nil {
+			log.Fatalf("Failed to mark message as seen: %v", err)
+		}
 	}
 	log.Infof("%d Records Incremented", numMessages)
 }
