@@ -18,11 +18,23 @@ func run(c *imapclient.Client, db *pgx.Conn) {
 	numMessages := len(messages)
 
 	for _, msg := range messages {
-		// admissions@osu.edu -> osu.edu
-		address := strings.Split(msg.Envelope.From[0].Addr(), "@")
+		// admissions@osu.edu -> admissions.osu.edu
+		senderSplit := strings.Split(msg.Envelope.From[0].Addr(), "@")
+		address := senderSplit[len(senderSplit)-1]
+
+		// admissions.osu.edu -> [admissions osu edu]
+		parts := strings.Split(address, ".")
+		// [admissions osu edu] -> osu.edu
+		domain := parts[len(parts)-2] + "." + parts[len(parts)-1]
 
 		// osu.edu -> CollegeRecord
-		record := fetchRecord(address[len(address)-1])
+		record := fetchRecord(domain)
+
+		// If the domain doesn't actually exist, skip
+		if record == nil {
+			log.Warnf("! %v", domain)
+			continue
+		}
 		log.Debugf("- %v", record.name)
 
 		// CollegeRecord -> DB Entry
